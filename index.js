@@ -226,7 +226,7 @@ function uploadFile(req, tmpDir, maxFileSize, maxChunkSize) {
 
                 getFileStatus((fileErr, assembleChunksF) => {
                     if (fileErr) reject(fileErr);
-                    else resolve(assembleChunksF);
+                    else resolve({assembleChunksF, postParams});
                 });
             });
 
