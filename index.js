@@ -58,7 +58,7 @@ function cleanChunks(dirPath) {
  * @param { Object } postParams – form post fields
  * @return { Function } promised function to start assembling
  */
-function assembleChunks(tmpDir, dirPath, fileId, totalChunks, postParams) {
+function assembleChunks(tmpDir, dirPath, fileId, totalChunks, postParams, sendSseMessage) {
     const asyncReadFile = promisify(fs.readFile);
     const asyncAppendFile = promisify(fs.appendFile);
     const assembledFile = path.join(tmpDir, fileId);
@@ -112,7 +112,7 @@ function mkdirIfDoesntExist(dirPath, callback) {
  * @param { Object } postParams
  * @return { Function } getFileStatus – cb based function to know when file is written. callback(err, assembleChunks ƒ)
  */
-function handleFile(tmpDir, headers, fileStream, postParams) {
+function handleFile(tmpDir, headers, fileStream, postParams, sendSseMessage) {
     const dirPath = path.join(tmpDir, `${headers['uploader-file-id']}_tmp`);
     const chunkPath = path.join(dirPath, headers['uploader-chunk-number']);
     const chunkCount = +headers['uploader-chunk-number'];
@@ -136,7 +136,7 @@ function handleFile(tmpDir, headers, fileStream, postParams) {
 
             // if all is uploaded
             if (chunkCount === totalChunks - 1) {
-                assembleChunksPromise = assembleChunks(tmpDir, dirPath, headers['uploader-file-id'], totalChunks, postParams);
+                assembleChunksPromise = assembleChunks(tmpDir, dirPath, headers['uploader-file-id'], totalChunks, postParams,sendSseMessage);
             }
         });
 
@@ -190,7 +190,7 @@ function handleFile(tmpDir, headers, fileStream, postParams) {
  * @param { String } tmpDir – upload temp dir
  * @param { Number } maxChunkSize
  */
-function uploadFile(req, tmpDir, maxFileSize, maxChunkSize) {
+function uploadFile(req, tmpDir, maxFileSize, maxChunkSize, sendSseMessage) {
     return new Promise((resolve, reject) => {
         if (!checkHeaders(req.headers)) {
             reject(new Error('Missing header(s)'));
@@ -215,7 +215,7 @@ function uploadFile(req, tmpDir, maxFileSize, maxChunkSize) {
                     fileStream.resume();
                 });
 
-                getFileStatus = handleFile(tmpDir, req.headers, fileStream, postParams);
+                getFileStatus = handleFile(tmpDir, req.headers, fileStream, postParams, sendSseMessage);
             });
 
             busboy.on('field', (key, val) => {
