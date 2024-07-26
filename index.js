@@ -71,14 +71,15 @@ function assembleChunks(tmpDir, dirPath, fileId, totalChunks, postParams, sendSs
                 .then(chunk => asyncAppendFile(assembledFile, chunk))
                 .then(() => {
                     // assemble progress update
-                    const progress = Math.round((chunkCount / totalChunks) * 100);
-                    sendSseMessage(progress);  // Send progress update
-                    
+                    if (totalChunks > 2){
+                        const progress = Math.round((chunkCount / totalChunks) * 100);
+                        sendSseMessage(progress);  // Send progress update
+                     }
                     // 0 indexed files = length - 1, so increment before comparison
                     if (totalChunks > ++chunkCount) pipeChunk(chunkCount);
                     else {
                         cleanChunks(dirPath);
-                        sendSseMessage(100);  // Final progress update
+                        totalChunks > 2 && sendSseMessage(100);  // Final progress update
                         resolve({ filePath: assembledFile, postParams });
                     }
                 })
